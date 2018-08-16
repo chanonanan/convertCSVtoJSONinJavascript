@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+   <head>
+       <meta charset="utf-8">
+       <script src="js/jquery.min.js"></script>
+       <script src="js/papaparse.min.js"></script>
+       <script type="text/javascript" src="js/echarts.min.js"></script>
+       <script type="text/javascript" src="js/echarts-gl.min.js"></script>
+       <script type="text/javascript" src="js/ecStat.min.js"></script>
+       <script type="text/javascript" src="js/dataTool.min.js"></script>
+       <script type="text/javascript" src="js/china.js"></script>
+       <script type="text/javascript" src="js/world.js"></script>
+       <script type="text/javascript" src="js/api"></script>
+       <script type="text/javascript" src="js/bmap.min.js"></script>
+       <script type="text/javascript" src="js/simplex.js"></script>
+       <script>
+       var nodes = []
+       var edges = []
+       var size = {};
+       var names = {}
+       var ans = [];
+       var start_size = 10;
+       var json;
+        $(document).ready(function(){
+
+            $("#submitbutton").click(function(){
+              if( document.getElementById("csvfile").files.length == 0 ){
+                  alert("no files selected");
+              }else {
+                var myfile = $("#csvfile")[0].files[0];
+                Papa.parse(myfile,
+                    {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        // console.log("results:", results);
+                        for (var i = 0; i < results.data.length; i++) {
+                          if( ans.indexOf(results.data[i]['ASN']) === -1 ){
+                             // do something else
+                             // size.push(results.data[i]['ASN']:start_size);
+                             size[results.data[i]['ASN']] = start_size;
+                             names[results.data[i]['ASN']] = results.data[i]['Name'];
+                             ans.push(results.data[i]['ASN']);
+                             // console.log("not duplicate",results.data[i]);
+                           }else{
+                             size[results.data[i]['ASN']] += 10;
+                           }
+                          var edge = {
+                            'sourceID': results.data[i]['ASN-source'],
+                            'targetID':  results.data[i]['ASN'],
+                            'attributes': {},
+                            'size': 1
+                          }
+                         	edges.push(edge);
+                        }
+                        for (var i = 0; i < ans.length; i++) {
+                          var color = '#'+ Math.floor(Math.random()*16777215).toString(16);
+                          var node = {
+                            'id': ans[i],
+                            'x': Math.floor(Math.random() * (1000 - (-1000) + 1)) + (-1000),
+                            'y': Math.floor(Math.random() * (1000 - (-1000) + 1)) + (-1000),
+                            'attributes': {},
+                            'label': names[ans[i]],
+                            'color': color,
+                            'size': size[ans[i]]
+                          }
+                          nodes.push(node);
+                        }
+                        var jsonData = {'nodes':nodes,'edges':edges};
+                        var jsonString = JSON.stringify(jsonData);
+                        json = jsonData;
+                        var dom = document.getElementById("container");
+                        var myChart = echarts.init(dom);
+                        var app = {};
+                        option = null;
+
+                        myChart.showLoading();
+                        // var json = jsonString;
+                        // $.getJSON('test.json', function (json) {
+                          // console.log(json.nodes);
+                            myChart.hideLoading();
+                            myChart.setOption(option = {
+                                title: {
+                                    text: 'NPM Dependencies'
+                                },
+                                animationDurationUpdate: 1500,
+                                animationEasingUpdate: 'quinticInOut',
+                                series : [
+                                    {
+                                        type: 'graph',
+                                        layout: 'none',
+                                        // progressiveThreshold: 700,
+                                        data: json.nodes.map(function (node) {
+                                            return {
+                                                x: node.x,
+                                                y: node.y,
+                                                id: node.id,
+                                                name: node.label,
+                                                symbolSize: node.size,
+                                                itemStyle: {
+                                                    normal: {
+                                                        color: node.color
+                                                    }
+                                                }
+                                            };
+                                        }),
+                                        edges: json.edges.map(function (edge) {
+                                            return {
+                                                source: edge.sourceID,
+                                                target: edge.targetID
+                                            };
+                                        }),
+                                        label: {
+                                            emphasis: {
+                                                position: 'right',
+                                                show: true
+                                            }
+                                        },
+                                        roam: true,
+                                        focusNodeAdjacency: true,
+                                        lineStyle: {
+                                            normal: {
+                                                width: 0.5,
+                                                curveness: 0.3,
+                                                opacity: 0.7
+                                            }
+                                        }
+                                    }
+                                ]
+                            }, true);
+                        // });;
+                        if (option && typeof option === "object") {
+                            myChart.setOption(option, true);
+                        }
+
+                    }
+                });
+              }
+
+
+
+            });
+
+        })
+        </script>
+   </head>
+   <body style="height: 100%; margin: 0">
+       <form name="foo" method="post" enctype="multipart/form-data">
+          <input id="csvfile" type="file" value="i">
+      </form>
+
+      <button id="submitbutton" type="button">Gen Graph!</button>
+       <div id="container" style="height: 100%"></div>
+
+
+
+   </body>
+</html>

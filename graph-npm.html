@@ -21,13 +21,20 @@
        var ans = [];
        var start_size = 10;
        var json;
+       var graphName;
         $(document).ready(function(){
 
             $("#submitbutton").click(function(){
               if( document.getElementById("csvfile").files.length == 0 ){
                   alert("no files selected");
               }else {
+                nodes = [];
+                edges = [];
+                size = {};
+                names = {}
+                ans = [];
                 var myfile = $("#csvfile")[0].files[0];
+                graphName = myfile.name;
                 Papa.parse(myfile,
                     {
                     header: true,
@@ -81,15 +88,15 @@
                             myChart.hideLoading();
                             myChart.setOption(option = {
                                 title: {
-                                    text: 'NPM Dependencies'
+                                    text: graphName
                                 },
                                 animationDurationUpdate: 1500,
                                 animationEasingUpdate: 'quinticInOut',
                                 series : [
                                     {
                                         type: 'graph',
-                                        layout: 'none',
-                                        // progressiveThreshold: 700,
+                                        layout: 'circular',
+                                        progressiveThreshold: 700,
                                         data: json.nodes.map(function (node) {
                                             return {
                                                 x: node.x,

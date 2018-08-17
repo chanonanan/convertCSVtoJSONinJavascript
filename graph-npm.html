@@ -4,22 +4,14 @@
        <meta charset="utf-8">
        <script src="js/jquery.min.js"></script>
        <script src="js/papaparse.min.js"></script>
-       <script type="text/javascript" src="js/echarts.min.js"></script>
-       <script type="text/javascript" src="js/echarts-gl.min.js"></script>
-       <script type="text/javascript" src="js/ecStat.min.js"></script>
-       <script type="text/javascript" src="js/dataTool.min.js"></script>
-       <script type="text/javascript" src="js/china.js"></script>
-       <script type="text/javascript" src="js/world.js"></script>
-       <script type="text/javascript" src="js/api"></script>
-       <script type="text/javascript" src="js/bmap.min.js"></script>
-       <script type="text/javascript" src="js/simplex.js"></script>
+       <script type="text/javascript" src="js/echarts.js"></script>
        <script>
        var nodes = []
        var edges = []
        var size = {};
        var names = {}
        var ans = [];
-       var start_size = 10;
+       var startSize = 1;
        var json;
        var graphName;
       $(document).ready(function(){
@@ -58,17 +50,75 @@
           });
 
         })
-
         function genGraph(results){
+          var max = 0;
+          var numNode = 0;
           for (var i = 0; i < results.data.length; i++) {
+            var color = '#'+ Math.floor(Math.random()*16777215).toString(16);
             if( ans.indexOf(results.data[i]['ASN']) === -1 ){
-               size[results.data[i]['ASN']] = start_size;
-               names[results.data[i]['ASN']] = results.data[i]['Name'];
+              numNode +=1;
+                var node = {
+                  'id': results.data[i]['ASN'],
+                  'x': Math.floor(Math.random() * (1000 - (-1000) + 1)) + (-1000),
+                  'y': Math.floor(Math.random() * (1000 - (-1000) + 1)) + (-1000),
+                  'attributes': {},
+                  'label': results.data[i]['ASN'],
+                  'color': color,
+                  'size': startSize
+                }
+                nodes.push(node);
+               // size[results.data[i]['ASN']] = startSize;
+               // names[results.data[i]['ASN']] = results.data[i]['Name'];
                ans.push(results.data[i]['ASN']);
                // console.log("not duplicate",results.data[i]);
              }else{
-               size[results.data[i]['ASN']] += 10;
+              //  if (Object.values(nodes).includes(results.data[i]['ASN']) > -1) {
+              //
+              //    console.log('has test1');
+              // }
+              Object.keys(nodes).forEach(function(key) {
+                // console.log(key);
+                if (nodes[key].id == results.data[i]['ASN']) {
+                  nodes[key].size += 0.1;
+                  if(nodes[key].size>max){max = nodes[key].size;}
+                  // console.log('has test2');
+                }
+              });
+               // size[results.data[i]['ASN']] += 1;
              }
+             if( ans.indexOf(results.data[i]['ASN-source']) === -1 ){
+               numNode +=1;
+               // var nameDummy;
+               // Object.keys(results.data).forEach(function(key) {
+               //   // console.log(key);
+               //   if (results.data[key].ASN == results.data[i]['ASN-source']) {
+               //     console.log('Match',results.data[key].Name, results.data[i]['Name']);
+               //     nameDummy = results.data[key].Name;
+               //     return false;
+               //     // nodes[key].size += 0.1;
+               //     // if(nodes[key].size>max){max = nodes[key].size;}
+               //   }
+               // });
+                 var node = {
+                   'id': results.data[i]['ASN-source'],
+                   'x': Math.floor(Math.random() * (1000 - (-1000) + 1)) + (-1000),
+                   'y': Math.floor(Math.random() * (1000 - (-1000) + 1)) + (-1000),
+                   'attributes': {},
+                   'label': results.data[i]['ASN-source'],
+                   'color': color,
+                   'size': startSize
+                 }
+                 nodes.push(node);
+                ans.push(results.data[i]['ASN-source']);
+              }else{
+               Object.keys(nodes).forEach(function(key) {
+                 // console.log(key);
+                 if (nodes[key].id == results.data[i]['ASN-source']) {
+                   nodes[key].size += 0.1;
+                   if(nodes[key].size>max){max = nodes[key].size;}
+                 }
+               });
+              }
             var edge = {
               'sourceID': results.data[i]['ASN-source'],
               'targetID':  results.data[i]['ASN'],
@@ -77,19 +127,9 @@
             }
             edges.push(edge);
           }
-          for (var i = 0; i < ans.length; i++) {
-            var color = '#'+ Math.floor(Math.random()*16777215).toString(16);
-            var node = {
-              'id': ans[i],
-              'x': Math.floor(Math.random() * (1000 - (-1000) + 1)) + (-1000),
-              'y': Math.floor(Math.random() * (1000 - (-1000) + 1)) + (-1000),
-              'attributes': {},
-              'label': names[ans[i]],
-              'color': color,
-              'size': size[ans[i]]
-            }
-            nodes.push(node);
-          }
+          console.log('max size',max);
+          console.log('num node',numNode);
+          console.log('ans',ans);
           var jsonData = {'nodes':nodes,'edges':edges};
           var jsonString = JSON.stringify(jsonData);
           json = jsonData;
@@ -106,8 +146,12 @@
               series : [
                   {
                       type: 'graph',
-                      layout: 'circular',
+                      layout: 'force',
                       progressiveThreshold: 700,
+                      draggable: true,
+                      force: {
+                          repulsion: 100
+                      },
                       data: json.nodes.map(function (node) {
                           return {
                               x: node.x,
@@ -139,7 +183,7 @@
                       lineStyle: {
                           normal: {
                               width: 0.5,
-                              curveness: 0.3,
+                              // curveness: 0.3,
                               opacity: 0.7
                           }
                       }
